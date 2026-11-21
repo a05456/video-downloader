@@ -26,14 +26,25 @@ jobs:
         python -m pip install --upgrade pip
         pip install pyinstaller yt-dlp PySide6 qt-material
     
-    - name: Download FFmpeg
+    - name: Download FFmpeg (essentials, ffmpeg.exe only)
       run: |
-        Invoke-WebRequest -Uri "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n9.0-latest-win64-gpl-9.0.zip" -OutFile "ffmpeg.zip"
-        Expand-Archive -Path ffmpeg.zip -DestinationPath .
-    
+        Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" -OutFile "ffmpeg.zip"
+        Expand-Archive -Path ffmpeg.zip -DestinationPath ffmpeg_tmp
+        $ffdir = Get-ChildItem ffmpeg_tmp -Directory | Select-Object -First 1
+        New-Item -ItemType Directory -Force ffmpeg/bin
+        Copy-Item "$($ffdir.FullName)/bin/ffmpeg.exe" ffmpeg/bin/ffmpeg.exe
+        Remove-Item -Recurse -Force ffmpeg_tmp, ffmpeg.zip
+
+    - name: Compress FFmpeg with UPX
+      run: |
+        Invoke-WebRequest -Uri "https://github.com/upx/upx/releases/download/v4.2.4/upx-4.2.4-win64.zip" -OutFile "upx.zip"
+        Expand-Archive -Path upx.zip -DestinationPath upx_tmp
+        & "$PWD/upx_tmp/upx-4.2.4-win64/upx.exe" --best --force ffmpeg/bin/ffmpeg.exe
+        Remove-Item -Recurse -Force upx_tmp, upx.zip
+
     - name: Build EXE
       run: |
-        pyinstaller --onefile --windowed --collect-all qt_material --add-data "ffmpeg-n9.0-latest-win64-gpl-9.0;ffmpeg" video_downloader.py
+        pyinstaller --onefile --windowed --collect-all qt_material --add-data "ffmpeg;ffmpeg" video_downloader.py
         Move-Item -Path dist/video_downloader.exe -Destination dist/VideoDownloader.exe
     
     - name: Create Release
