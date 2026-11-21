@@ -23,7 +23,7 @@
 דורש Python ו-FFmpeg:
 
 ```bash
-pip install yt-dlp
+pip install yt-dlp PySide6 qt-material
 python video_downloader.py
 ```
 
